@@ -1,19 +1,42 @@
 import { Database } from 'sqlite3'
 import { open } from 'sqlite'
 import { Endpoint } from '@/contexts/endpoints-context'
-import { runMigrations } from './migrations'
+import path from 'path'
 
 let db: any = null
 
 async function getDb() {
   if (!db) {
     db = await open({
-      filename: './data.db',
+      filename: path.join(process.cwd(), 'data', 'manyflow.db'),
       driver: Database
     })
 
-    // Run migrations on initial connection
-    await runMigrations()
+    // Create endpoints table if it doesn't exist
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS endpoints (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        url TEXT NOT NULL,
+        username TEXT,
+        password TEXT,
+        isActive BOOLEAN DEFAULT true
+      )
+    `)
+
+    // Create logs table if it doesn't exist
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS logs (
+        id TEXT PRIMARY KEY,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        level TEXT NOT NULL,
+        message TEXT NOT NULL,
+        dagId TEXT,
+        taskId TEXT,
+        endpointId TEXT,
+        FOREIGN KEY (endpointId) REFERENCES endpoints(id)
+      )
+    `)
   }
 
   return db
@@ -51,9 +74,9 @@ export async function addEndpoint(endpoint: Omit<Endpoint, 'id' | 'isActive'>): 
   )
 
   return {
-    ...endpoint,
     id,
-    isActive: true,
+    ...endpoint,
+    isActive: true
   }
 }
 
@@ -68,10 +91,10 @@ export async function updateEndpoint(id: string, update: Partial<Endpoint>): Pro
   })
 
   if (sets.length > 0) {
-    values.push(id)
     await db.run(
       `UPDATE endpoints SET ${sets.join(', ')} WHERE id = ?`,
-      ...values
+      ...values,
+      id
     )
   }
 }

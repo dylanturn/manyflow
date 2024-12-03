@@ -1,8 +1,8 @@
 import { Inter } from 'next/font/google'
-import Link from "next/link"
 import "./globals.css"
 import { Providers } from '@/components/providers'
 import { Toaster } from 'sonner'
+import { Navigation } from '@/components/layout/navigation'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -20,23 +20,25 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <Providers>
-          <div className="flex min-h-screen flex-col">
-            <header className="border-b">
-              <div className="container flex h-14 items-center">
-                <nav className="flex items-center space-x-6 text-sm font-medium">
-                  <Link href="/" className="transition-colors hover:text-foreground/80">
-                    Home
-                  </Link>
-                  <Link href="/dags" className="transition-colors hover:text-foreground/80">
-                    DAGs
-                  </Link>
-                  <Link href="/admin" className="transition-colors hover:text-foreground/80">
-                    Admin
-                  </Link>
-                </nav>
+          <div className="flex min-h-screen">
+            {/* Sidebar */}
+            <div className="hidden border-r bg-background md:block md:w-64">
+              <div className="flex h-full flex-col">
+                <div className="border-b px-6 py-4">
+                  <h2 className="text-lg font-semibold">ManyFlow</h2>
+                </div>
+                <div className="flex-1 overflow-auto p-4">
+                  <Navigation />
+                </div>
               </div>
-            </header>
-            <main className="flex-1">{children}</main>
+            </div>
+
+            {/* Main content */}
+            <div className="flex flex-1 flex-col">
+              <main className="flex-1">
+                {children}
+              </main>
+            </div>
           </div>
           <Toaster />
         </Providers>
