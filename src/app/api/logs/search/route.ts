@@ -51,10 +51,18 @@ export async function GET(req: NextRequest) {
       size
     })
 
-    // Cache results for 1 minute
-    await Cache.setDagList(cacheKey, JSON.stringify(results), 60)
+    const response = {
+      hits: results?.hits?.map(hit => ({
+        _id: hit._id,
+        ...hit._source
+      })) || [],
+      total: results?.total || 0
+    }
 
-    return NextResponse.json(results)
+    // Cache results for 1 minute
+    await Cache.setDagList(cacheKey, JSON.stringify(response), 60)
+
+    return NextResponse.json(response)
   } catch (error) {
     console.error('Error searching logs:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
