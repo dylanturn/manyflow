@@ -2,6 +2,8 @@
 
 ManyFlow is a modern, feature-rich Airflow management system designed to provide data engineers with a unified interface for managing multiple Airflow clusters. Built with Next.js 13+ and TypeScript, it offers a sleek, responsive UI for monitoring and managing your Airflow deployments.
 
+The Airflow API specification can be found [here](v1.yaml).
+
 # UX/UI Style Guidelines
 
 **Important:** When being asked to implement a new feature, please consider how the user will interact with the tool.
