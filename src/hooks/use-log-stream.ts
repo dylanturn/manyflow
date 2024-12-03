@@ -63,7 +63,6 @@ export function useLogStream({
     }
 
     eventSource.onerror = (error) => {
-      console.error('EventSource error:', error)
       setError('Error connecting to log stream')
       setIsConnected(false)
       eventSource.close()

@@ -52,11 +52,11 @@ export function LogAnalytics() {
     return <div>Loading analytics...</div>
   }
 
-  const logVolumeData = analytics.logVolumeOverTime.map((point) => ({
+  const logVolumeData = (analytics.logVolumeOverTime || []).map((point) => ({
     timestamp: new Date(point.key_as_string).toLocaleString(),
     total: point.doc_count,
     ...Object.fromEntries(
-      point.by_level.buckets.map((bucket) => [bucket.key, bucket.doc_count])
+      (point.by_level.buckets || []).map((bucket) => [bucket.key, bucket.doc_count])
     ),
   }))
 
@@ -84,7 +84,7 @@ export function LogAnalytics() {
           </CardHeader>
           <CardContent>
             <PieChart
-              data={analytics.logLevelStats.map((stat) => ({
+              data={(analytics.logLevelStats || []).map((stat) => ({
                 name: stat.key,
                 value: stat.doc_count,
               }))}
@@ -98,7 +98,7 @@ export function LogAnalytics() {
           </CardHeader>
           <CardContent>
             <BarChart
-              data={analytics.topErrors.map((error) => ({
+              data={(analytics.topErrors || []).map((error) => ({
                 name: error.key,
                 value: error.doc_count,
               }))}
@@ -113,7 +113,7 @@ export function LogAnalytics() {
           </CardHeader>
           <CardContent>
             <BarChart
-              data={analytics.topDags.map((dag) => ({
+              data={(analytics.topDags || []).map((dag) => ({
                 name: dag.key,
                 total: dag.doc_count,
                 errors: dag.error_count.doc_count,
@@ -141,7 +141,7 @@ export function LogAnalytics() {
         </CardHeader>
         <CardContent>
           <BarChart
-            data={analytics.topEndpoints.map((endpoint) => ({
+            data={(analytics.topEndpoints || []).map((endpoint) => ({
               name: endpoint.key,
               total: endpoint.doc_count,
               errors: endpoint.error_count.doc_count,

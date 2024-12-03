@@ -42,6 +42,14 @@ interface BarChartProps {
 }
 
 export function BarChart({ data, layout = 'horizontal' }: BarChartProps) {
+  if (!data || data.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-[300px] text-gray-500">
+        No data available
+      </div>
+    )
+  }
+
   const dataKeys = Object.keys(data[0]).filter((key) => key !== 'name')
 
   return (

@@ -76,8 +76,8 @@ export function DagDetails({ dagId }: DagDetailsProps) {
         <div className="p-4 border rounded-lg space-y-2">
           <h3 className="font-medium">Owners</h3>
           <div className="flex flex-wrap gap-2">
-            {dag?.owners?.map((owner) => (
-              <Badge key={owner} variant="outline">
+            {dag?.owners?.map((owner, index) => (
+              <Badge key={`${owner}-${index}`} variant="outline">
                 {owner}
               </Badge>
             ))}
@@ -99,7 +99,7 @@ export function DagDetails({ dagId }: DagDetailsProps) {
           <TableBody>
             {isRunsLoading ? (
               Array.from({ length: 5 }).map((_, index) => (
-                <TableRow key={index}>
+                <TableRow key={`loading-${index}`}>
                   <TableCell>
                     <Skeleton className="h-4 w-[150px]" />
                   </TableCell>
@@ -128,7 +128,7 @@ export function DagDetails({ dagId }: DagDetailsProps) {
               </TableRow>
             ) : (
               dagRuns?.map((run) => (
-                <TableRow key={run.dag_run_id}>
+                <TableRow key={`${run.dag_run_id}-${run.start_date}`}>
                   <TableCell className="font-medium">{run.dag_run_id}</TableCell>
                   <TableCell>
                     <Badge

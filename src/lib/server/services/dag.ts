@@ -23,7 +23,7 @@ export class DagService {
         isPaused: response.data.is_paused
       }
     } catch (error) {
-      throw new Error(`Failed to get DAG state: ${error.message}`)
+      throw new Error(`Failed to get DAG state: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -33,7 +33,7 @@ export class DagService {
         is_paused: isPaused
       })
     } catch (error) {
-      throw new Error(`Failed to toggle DAG state: ${error.message}`)
+      throw new Error(`Failed to toggle DAG state: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -53,7 +53,7 @@ export class DagService {
           await this.toggleDagState(endpointUrl, dagId, isPaused)
           results.success.push(dagId)
         } catch (error) {
-          results.failed.push({ dagId, error: error.message })
+          results.failed.push({ dagId, error: error instanceof Error ? error.message : String(error) })
         }
       })
     )
@@ -68,7 +68,7 @@ export class DagService {
       })
       return response.data.dag_run_id
     } catch (error) {
-      throw new Error(`Failed to trigger DAG: ${error.message}`)
+      throw new Error(`Failed to trigger DAG: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -88,7 +88,7 @@ export class DagService {
           const runId = await this.triggerDag(endpointUrl, dagId, conf)
           results.success.push({ dagId, runId })
         } catch (error) {
-          results.failed.push({ dagId, error: error.message })
+          results.failed.push({ dagId, error: error instanceof Error ? error.message : String(error) })
         }
       })
     )
@@ -107,7 +107,7 @@ export class DagService {
       })
       return response.data.dag_runs
     } catch (error) {
-      throw new Error(`Failed to get DAG runs: ${error.message}`)
+      throw new Error(`Failed to get DAG runs: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -121,7 +121,7 @@ export class DagService {
         params: { end_date: endDate }
       })
     } catch (error) {
-      throw new Error(`Failed to clear DAG runs: ${error.message}`)
+      throw new Error(`Failed to clear DAG runs: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -141,7 +141,7 @@ export class DagService {
           await this.clearDagRuns(endpointUrl, dagId, endDate)
           results.success.push(dagId)
         } catch (error) {
-          results.failed.push({ dagId, error: error.message })
+          results.failed.push({ dagId, error: error instanceof Error ? error.message : String(error) })
         }
       })
     )

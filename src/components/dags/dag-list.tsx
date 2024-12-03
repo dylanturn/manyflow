@@ -181,7 +181,7 @@ export function DagList() {
               </TableRow>
             ) : (
               filteredAndSortedDags?.map((dag) => (
-                <TableRow key={dag.dag_id} className="cursor-pointer hover:bg-muted/50">
+                <TableRow key={`${dag.cluster}-${dag.dag_id}`} className="cursor-pointer hover:bg-muted/50">
                   <TableCell className="font-medium">
                     <Link href={`/dags/${dag.dag_id}`} className="hover:underline">
                       {dag.dag_id}

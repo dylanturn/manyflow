@@ -5,7 +5,7 @@ import path from 'path'
 
 let db: any = null
 
-async function getDb() {
+export async function getDb() {
   if (!db) {
     db = await open({
       filename: path.join(process.cwd(), 'data', 'manyflow.db'),

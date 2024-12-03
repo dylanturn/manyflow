@@ -137,6 +137,19 @@
 - Added connection status badges
 - Smooth auto-scrolling animation
 
+### Recent Bug Fixes and Improvements (✅)
+- Fixed TypeScript error handling in DAG service
+  - Added proper type checking for error objects
+  - Improved error message formatting
+- Fixed duplicate key issue in DAG list
+  - Updated table row keys to include cluster name
+  - Ensures unique keys across multiple Airflow instances
+- Enhanced log streaming functionality
+  - Added CORS headers for SSE endpoints
+  - Improved error handling in streaming API
+  - Better authentication error responses
+  - Added heartbeat mechanism to keep connections alive
+
 ## Checkpoint 3: Client-Side Log Search UI
 
 ### Features Added

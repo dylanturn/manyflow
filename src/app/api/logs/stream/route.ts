@@ -3,14 +3,30 @@ import { ElasticsearchService } from '@/lib/server/services/elasticsearch'
 import config from '@/lib/server/config'
 import { authenticateRequest } from '@/lib/server/middleware/auth'
 
-export const runtime = 'edge'
-
 export async function GET(req: NextRequest) {
   try {
+    // Set CORS headers for SSE
+    const headers = {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    }
+
+    // Handle preflight
+    if (req.method === 'OPTIONS') {
+      return new Response(null, { headers })
+    }
+
     // Authenticate request
     const authResult = await authenticateRequest(req)
     if (!authResult.success) {
-      return new Response('Unauthorized', { status: 401 })
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }), 
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
+      )
     }
 
     // Parse query parameters
@@ -76,15 +92,15 @@ export async function GET(req: NextRequest) {
       writer.close()
     })
 
-    return new Response(stream.readable, {
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-      },
-    })
+    return new Response(stream.readable, { headers })
   } catch (error) {
     console.error('Error setting up log stream:', error)
-    return new Response('Internal Server Error', { status: 500 })
+    return new Response(
+      JSON.stringify({ error: 'Internal Server Error', details: error instanceof Error ? error.message : String(error) }), 
+      { 
+        status: 500, 
+        headers: { 'Content-Type': 'application/json' } 
+      }
+    )
   }
 }
