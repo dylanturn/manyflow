@@ -1,15 +1,77 @@
-# Manyflow
+# ManyFlow
 
-Manyflow is an Airflow management system. It is a tool for managing many Airflow clusters and provides data engineers a single pane of glass to manage many Airflow clusters.
+ManyFlow is a modern, feature-rich Airflow management system designed to provide data engineers with a unified interface for managing multiple Airflow clusters. Built with Next.js 13+ and TypeScript, it offers a sleek, responsive UI for monitoring and managing your Airflow deployments.
 
-This tool is built using NextJS, TailwindCSS, lucide-react for icons, and shadcn/ui for components. It will support authentication using a simple username and password, as well as LDAP, SAML, and OIDC.
+## Features
 
-Some of the features of the tool include:
-- View Airflow cluster status
-- View DAG and task runs and logs
-- View dag and task metrics
-- View Dag Processor logs, metrics, and dag statuses
-- View Airflow cluster component logs
-- View DAG event trigger logs
-- View Airflow cluster event logs
-- View Airflow cluster health
+- **Multi-Cluster Management**
+  - View and manage multiple Airflow clusters from a single dashboard
+  - Real-time cluster health monitoring
+  - Easy endpoint configuration and management
+
+- **DAG Management**
+  - View all DAGs across clusters
+  - Monitor DAG status and run history
+  - View DAG and task metrics
+  - Access DAG and task logs
+  - Pause/unpause DAGs
+
+- **Monitoring & Metrics**
+  - Real-time cluster health status
+  - DAG processor logs and metrics
+  - Task instance metrics
+  - Event trigger logs
+  - Cluster component logs
+
+- **Modern UI/UX**
+  - Clean, intuitive dashboard
+  - Real-time updates
+  - Responsive design
+  - Dark mode support
+
+## Tech Stack
+
+- **Frontend**
+  - Next.js 13+
+  - TypeScript
+  - TailwindCSS
+  - shadcn/ui components
+  - Lucide React icons
+  - TanStack Query for data fetching
+
+- **Backend**
+  - Next.js API routes
+  - SQLite database
+  - Airflow REST API integration
+
+## Getting Started
+
+1. **Prerequisites**
+   - Node.js 16+
+   - Access to one or more Airflow instances
+
+2. **Installation**
+   ```bash
+   # Clone the repository
+   git clone https://github.com/yourusername/manyflow.git
+   cd manyflow
+
+   # Install dependencies
+   npm install
+
+   # Start the development server
+   npm run dev
+   ```
+
+3. **Configuration**
+   - Navigate to the Admin page
+   - Add your Airflow endpoints with the required credentials
+   - Start monitoring your Airflow clusters
+
+## Authentication
+
+ManyFlow supports multiple authentication methods:
+- Basic username/password
+- LDAP
+- SAML
+- OIDC

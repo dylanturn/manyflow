@@ -12,22 +12,38 @@ export class AirflowClient {
   }
 
   private async fetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const url = `${this.baseUrl}/api/v1${endpoint}`
+    const url = endpoint === '/health' 
+      ? `${this.baseUrl}${endpoint}`
+      : `${this.baseUrl}/api/v1${endpoint}`
     const headers = new Headers(options.headers)
+    options.cache = 'no-cache'
     headers.set('Authorization', 'Basic ' + Buffer.from(`${this.username}:${this.password}`).toString('base64'))
     headers.set('Content-Type', 'application/json')
 
-    const response = await fetch(url, {
-      ...options,
-      headers,
-    })
+    console.log(`[Airflow Client] Making request to: ${url}`)
+    console.log(`[Airflow Client] Headers:`, Object.fromEntries(headers.entries()))
 
-    if (!response.ok) {
-      const error = await response.text()
-      throw new Error(`Airflow API error: ${error}`)
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers,
+      })
+
+      console.log(`[Airflow Client] Response status:`, response.status)
+      
+      if (!response.ok) {
+        const error = await response.text()
+        console.error(`[Airflow Client] Error response:`, error)
+        throw new Error(`Airflow API error: ${error}`)
+      }
+
+      const data = await response.json()
+      console.log(`[Airflow Client] Response data:`, data)
+      return data
+    } catch (error) {
+      console.error(`[Airflow Client] Request failed:`, error)
+      throw error
     }
-
-    return response.json()
   }
 
   async getHealth(): Promise<AirflowHealth> {
