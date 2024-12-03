@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { AirflowClient } from '@/lib/server/airflow-client'
+import { ServerAirflowClient } from '@/lib/server/server-airflow-client'
 import { getEndpoint } from '@/lib/server/db'
 
 export async function GET(
@@ -25,7 +25,7 @@ export async function GET(
       url: endpoint.url
     })
 
-    const client = new AirflowClient(endpoint.url, endpoint.username, endpoint.password)
+    const client = new ServerAirflowClient(endpoint.url, endpoint.username, endpoint.password)
     const health = await client.getHealth()
 
     console.log(`[Health Check] Health check result:`, health)

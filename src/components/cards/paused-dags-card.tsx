@@ -3,13 +3,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useEndpoints } from "@/contexts/endpoints-context"
 import { useQuery } from "@tanstack/react-query"
-import { AirflowClient } from "@/lib/airflow-client"
+import { BrowserAirflowClient } from "@/lib/browser-airflow-client"
 import { Skeleton } from "@/components/ui/skeleton"
 import { AlertCircle } from "lucide-react"
 
 export function PausedDagsCard() {
   const { selectedEndpoint } = useEndpoints()
-  const client = new AirflowClient(
+  const client = new BrowserAirflowClient(
     selectedEndpoint?.id ?? "",
     selectedEndpoint?.username ?? "",
     selectedEndpoint?.password ?? ""

@@ -1,39 +1,57 @@
 import { type AirflowHealth, type DAG, type DAGRun, type TaskInstance } from '@/types/airflow'
 
-export class AirflowClient {
-  private endpointId: string
+/**
+ * Server-side Airflow API client that directly communicates with Airflow instances.
+ * This client handles authentication and should only be used in server-side contexts.
+ */
+export class ServerAirflowClient {
+  private baseUrl: string
   private username: string
   private password: string
 
-  constructor(endpointId: string, username: string, password: string) {
-    this.endpointId = endpointId
+  constructor(baseUrl: string, username: string, password: string) {
+    this.baseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl
     this.username = username
     this.password = password
   }
 
   private async fetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const response = await fetch(`/api/endpoints/${this.endpointId}${endpoint}`, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-    })
+    const url = endpoint === '/health' 
+      ? `${this.baseUrl}${endpoint}`
+      : `${this.baseUrl}/api/v1${endpoint}`
+    const headers = new Headers(options.headers)
+    options.cache = 'no-cache'
+    headers.set('Authorization', 'Basic ' + Buffer.from(`${this.username}:${this.password}`).toString('base64'))
+    headers.set('Content-Type', 'application/json')
 
-    if (!response.ok) {
-      const error = await response.text()
-      throw new Error(`Airflow API error: ${error}`)
+    console.log(`[Airflow Client] Making request to: ${url}`)
+    console.log(`[Airflow Client] Headers:`, Object.fromEntries(headers.entries()))
+
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers,
+      })
+
+      console.log(`[Airflow Client] Response status:`, response.status)
+      
+      if (!response.ok) {
+        const error = await response.text()
+        console.error(`[Airflow Client] Error response:`, error)
+        throw new Error(`Airflow API error: ${error}`)
+      }
+
+      const data = await response.json()
+      console.log(`[Airflow Client] Response data:`, data)
+      return data
+    } catch (error) {
+      console.error(`[Airflow Client] Request failed:`, error)
+      throw error
     }
-
-    return response.json()
   }
 
-  async getHealth(): Promise<any> {
-    const response = await fetch(`/api/endpoints/${this.endpointId}/health`)
-    if (!response.ok) {
-      throw new Error('Failed to fetch health status')
-    }
-    return response.json()
+  async getHealth(): Promise<AirflowHealth> {
+    return this.fetch<AirflowHealth>('/health')
   }
 
   async getDags(limit = 100, offset = 0): Promise<{ dags: DAG[], total_entries: number }> {
@@ -85,10 +103,10 @@ export class AirflowClient {
     taskTryNumber: number
   ): Promise<string> {
     const response = await fetch(
-      `/api/endpoints/${this.endpointId}/dags/${dagId}/dagRuns/${dagRunId}/taskInstances/${taskId}/logs/${taskTryNumber}`,
+      `${this.baseUrl}/api/v1/dags/${dagId}/dagRuns/${dagRunId}/taskInstances/${taskId}/logs/${taskTryNumber}`,
       {
         headers: {
-          'Content-Type': 'application/json',
+          'Authorization': 'Basic ' + Buffer.from(`${this.username}:${this.password}`).toString('base64'),
         },
       }
     )

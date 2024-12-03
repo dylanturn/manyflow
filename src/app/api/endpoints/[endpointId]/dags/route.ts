@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { AirflowClient } from '@/lib/server/airflow-client'
+import { ServerAirflowClient } from '@/lib/server/server-airflow-client'
 import { getEndpoint } from '@/lib/server/db'
 
 export async function GET(
@@ -16,7 +16,7 @@ export async function GET(
       )
     }
 
-    const client = new AirflowClient(endpoint.url, endpoint.username, endpoint.password)
+    const client = new ServerAirflowClient(endpoint.url, endpoint.username, endpoint.password)
     const { searchParams } = new URL(request.url)
     const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 100
     const offset = searchParams.get('offset') ? parseInt(searchParams.get('offset')!) : 0
@@ -47,7 +47,7 @@ export async function POST(
       )
     }
 
-    const client = new AirflowClient(endpoint.url, endpoint.username, endpoint.password)
+    const client = new ServerAirflowClient(endpoint.url, endpoint.username, endpoint.password)
 
     switch (action) {
       case 'pause':

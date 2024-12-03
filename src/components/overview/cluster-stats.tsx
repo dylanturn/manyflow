@@ -1,41 +1,63 @@
 'use client'
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { AirflowClient } from "@/lib/airflow-client"
+import { BrowserAirflowClient } from "@/lib/browser-airflow-client"
 import { useEndpoints } from "@/contexts/endpoints-context"
 import { useQuery } from "@tanstack/react-query"
 import { Activity, AlertCircle, CheckCircle2, Clock } from "lucide-react"
 
 export function ClusterStats() {
-  const { selectedEndpoint } = useEndpoints()
-  const client = new AirflowClient(
-    selectedEndpoint?.id ?? "",
-    selectedEndpoint?.username ?? "",
-    selectedEndpoint?.password ?? ""
-  )
+  const { endpoints } = useEndpoints()
 
-  const { data: healthData } = useQuery({
-    queryKey: ["health", selectedEndpoint?.id],
-    queryFn: () => client.getHealth(),
-    enabled: !!selectedEndpoint,
-  })
-
-  const { data: dagsData } = useQuery({
-    queryKey: ["dags", selectedEndpoint?.id],
-    queryFn: () => client.getDags(),
-    enabled: !!selectedEndpoint,
+  const endpointQueries = useQuery({
+    queryKey: ["all-clusters-stats"],
+    queryFn: async () => {
+      const allStats = await Promise.all(
+        endpoints.map(async (endpoint) => {
+          const client = new BrowserAirflowClient(
+            endpoint.id,
+            endpoint.username,
+            endpoint.password
+          )
+          try {
+            const [healthData, dagsData] = await Promise.all([
+              client.getHealth(),
+              client.getDags()
+            ])
+            return {
+              dags: dagsData.dags,
+              health: healthData,
+              name: endpoint.name
+            }
+          } catch (error) {
+            console.error(`Failed to fetch stats from ${endpoint.name}:`, error)
+            return {
+              dags: [],
+              health: null,
+              name: endpoint.name
+            }
+          }
+        })
+      )
+      return allStats
+    },
+    enabled: endpoints.length > 0,
   })
 
   const stats = {
-    totalDags: dagsData?.dags?.length ?? 0,
-    activeDags: dagsData?.dags?.filter((dag) => dag.is_active).length ?? 0,
-    pausedDags: dagsData?.dags?.filter((dag) => !dag.is_active).length ?? 0,
-    clusterHealth: healthData?.metadatabase?.status === "healthy" ? "Healthy" : "Unhealthy",
+    totalDags: endpointQueries.data?.reduce((sum, endpoint) => sum + endpoint.dags.length, 0) ?? 0,
+    activeDags: endpointQueries.data?.reduce((sum, endpoint) => 
+      sum + endpoint.dags.filter(dag => dag.is_active).length, 0) ?? 0,
+    pausedDags: endpointQueries.data?.reduce((sum, endpoint) => 
+      sum + endpoint.dags.filter(dag => !dag.is_active).length, 0) ?? 0,
+    healthyEndpoints: endpointQueries.data?.filter(endpoint => 
+      endpoint.health?.metadatabase?.status === "healthy").length ?? 0,
+    totalEndpoints: endpoints.length
   }
 
-  if (!selectedEndpoint) {
+  if (endpoints.length === 0) {
     return (
-      <>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total DAGs</CardTitle>
@@ -44,7 +66,7 @@ export function ClusterStats() {
           <CardContent>
             <div className="text-2xl font-bold">-</div>
             <p className="text-xs text-muted-foreground">
-              Select an endpoint to view stats
+              Add an endpoint to view stats
             </p>
           </CardContent>
         </Card>
@@ -56,7 +78,7 @@ export function ClusterStats() {
           <CardContent>
             <div className="text-2xl font-bold">-</div>
             <p className="text-xs text-muted-foreground">
-              Select an endpoint to view stats
+              Add an endpoint to view stats
             </p>
           </CardContent>
         </Card>
@@ -68,7 +90,7 @@ export function ClusterStats() {
           <CardContent>
             <div className="text-2xl font-bold">-</div>
             <p className="text-xs text-muted-foreground">
-              Select an endpoint to view stats
+              Add an endpoint to view stats
             </p>
           </CardContent>
         </Card>
@@ -80,11 +102,11 @@ export function ClusterStats() {
           <CardContent>
             <div className="text-2xl font-bold">-</div>
             <p className="text-xs text-muted-foreground">
-              Select an endpoint to view stats
+              Add an endpoint to view stats
             </p>
           </CardContent>
         </Card>
-      </>
+      </div>
     )
   }
 
@@ -98,7 +120,7 @@ export function ClusterStats() {
         <CardContent>
           <div className="text-2xl font-bold">{stats.totalDags}</div>
           <p className="text-xs text-muted-foreground">
-            Total number of DAGs in the cluster
+            Total number of DAGs across all clusters
           </p>
         </CardContent>
       </Card>
@@ -110,7 +132,7 @@ export function ClusterStats() {
         <CardContent>
           <div className="text-2xl font-bold">{stats.activeDags}</div>
           <p className="text-xs text-muted-foreground">
-            Number of active DAGs
+            Number of active DAGs across all clusters
           </p>
         </CardContent>
       </Card>
@@ -122,21 +144,19 @@ export function ClusterStats() {
         <CardContent>
           <div className="text-2xl font-bold">{stats.pausedDags}</div>
           <p className="text-xs text-muted-foreground">
-            Number of paused DAGs
+            Number of paused DAGs across all clusters
           </p>
         </CardContent>
       </Card>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Cluster Health</CardTitle>
-          <CheckCircle2 className={`h-4 w-4 ${stats.clusterHealth === "Healthy" ? "text-green-500" : "text-red-500"}`} />
+          <CheckCircle2 className={`h-4 w-4 ${stats.healthyEndpoints === stats.totalEndpoints ? "text-green-500" : "text-red-500"}`} />
         </CardHeader>
         <CardContent>
-          <div className={`text-2xl font-bold ${stats.clusterHealth === "Healthy" ? "text-green-500" : "text-red-500"}`}>
-            {stats.clusterHealth}
-          </div>
+          <div className="text-2xl font-bold">{stats.healthyEndpoints}/{stats.totalEndpoints}</div>
           <p className="text-xs text-muted-foreground">
-            Current cluster health status
+            Number of healthy clusters
           </p>
         </CardContent>
       </Card>

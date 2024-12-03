@@ -6,29 +6,45 @@ import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useEndpoints } from "@/contexts/endpoints-context"
-import { AirflowClient } from "@/lib/airflow-client"
+import { BrowserAirflowClient } from "@/lib/browser-airflow-client"
 import { useQuery } from "@tanstack/react-query"
 import { ArrowUpDown, Search } from "lucide-react"
 import { useState } from "react"
+import Link from "next/link"
 
-type SortField = "dag_id" | "owners" | "is_active"
-type SortOrder = "asc" | "desc"
+type SortField = "dag_id" | "owners" | "is_active" | "cluster"
 
 export function DagList() {
-  const { selectedEndpoint } = useEndpoints()
-  const client = new AirflowClient(
-    selectedEndpoint?.id ?? "",
-    selectedEndpoint?.username ?? "",
-    selectedEndpoint?.password ?? ""
-  )
+  const { endpoints } = useEndpoints()
   const [searchQuery, setSearchQuery] = useState("")
   const [sortField, setSortField] = useState<SortField>("dag_id")
-  const [sortOrder, setSortOrder] = useState<SortOrder>("asc")
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
 
-  const { data: dags, isLoading } = useQuery({
-    queryKey: ["dags", selectedEndpoint?.id],
-    queryFn: () => client.getDags(),
-    enabled: !!selectedEndpoint,
+  const endpointQueries = useQuery({
+    queryKey: ["all-dags"],
+    queryFn: async () => {
+      const allDags = await Promise.all(
+        endpoints.map(async (endpoint) => {
+          const client = new BrowserAirflowClient(
+            endpoint.id,
+            endpoint.username,
+            endpoint.password
+          )
+          try {
+            const dags = await client.getDags()
+            return dags.dags.map(dag => ({
+              ...dag,
+              cluster: endpoint.name
+            }))
+          } catch (error) {
+            console.error(`Failed to fetch DAGs from ${endpoint.name}:`, error)
+            return []
+          }
+        })
+      )
+      return allDags.flat()
+    },
+    enabled: endpoints.length > 0
   })
 
   const handleSort = (field: SortField) => {
@@ -40,7 +56,7 @@ export function DagList() {
     }
   }
 
-  const filteredAndSortedDags = dags?.dags
+  const filteredAndSortedDags = endpointQueries.data
     ?.filter((dag) => {
       const searchLower = searchQuery.toLowerCase()
       return (
@@ -49,35 +65,29 @@ export function DagList() {
         (dag.tags ?? []).some((tag) => 
           typeof tag === 'string' 
             ? tag.toLowerCase().includes(searchLower)
-            : tag.name.toLowerCase().includes(searchLower)
-        )
+            : tag.name?.toLowerCase().includes(searchLower)
+        ) ||
+        dag.cluster.toLowerCase().includes(searchLower)
       )
     })
     .sort((a, b) => {
-      if (sortField === "dag_id") {
-        return sortOrder === "asc"
-          ? a.dag_id.localeCompare(b.dag_id)
-          : b.dag_id.localeCompare(a.dag_id)
+      let comparison = 0
+      if (sortField === "cluster") {
+        comparison = a.cluster.localeCompare(b.cluster)
+      } else if (sortField === "dag_id") {
+        comparison = a.dag_id.localeCompare(b.dag_id)
+      } else if (sortField === "owners") {
+        comparison = (a.owners[0] || "").localeCompare(b.owners[0] || "")
+      } else if (sortField === "is_active") {
+        comparison = (a.is_active === b.is_active) ? 0 : a.is_active ? -1 : 1
       }
-      if (sortField === "owners") {
-        const ownerA = a.owners[0] || ""
-        const ownerB = b.owners[0] || ""
-        return sortOrder === "asc"
-          ? ownerA.localeCompare(ownerB)
-          : ownerB.localeCompare(ownerA)
-      }
-      if (sortField === "is_active") {
-        return sortOrder === "asc"
-          ? Number(a.is_active) - Number(b.is_active)
-          : Number(b.is_active) - Number(a.is_active)
-      }
-      return 0
+      return sortOrder === "asc" ? comparison : -comparison
     })
 
-  if (!selectedEndpoint) {
+  if (endpoints.length === 0) {
     return (
       <div className="text-center text-muted-foreground py-8">
-        Please select an endpoint to view DAGs
+        Please add an endpoint to view DAGs
       </div>
     )
   }
@@ -124,6 +134,15 @@ export function DagList() {
               <TableHead>
                 <Button
                   variant="ghost"
+                  onClick={() => handleSort("cluster")}
+                  className="flex items-center gap-1"
+                >
+                  Cluster <ArrowUpDown className="h-4 w-4" />
+                </Button>
+              </TableHead>
+              <TableHead>
+                <Button
+                  variant="ghost"
                   onClick={() => handleSort("is_active")}
                   className="flex items-center gap-2 font-medium"
                 >
@@ -134,7 +153,7 @@ export function DagList() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading ? (
+            {endpointQueries.isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
                   <TableCell>
@@ -147,26 +166,33 @@ export function DagList() {
                     <Skeleton className="h-4 w-[100px]" />
                   </TableCell>
                   <TableCell>
+                    <Skeleton className="h-4 w-[100px]" />
+                  </TableCell>
+                  <TableCell>
                     <Skeleton className="h-4 w-[80px]" />
                   </TableCell>
                 </TableRow>
               ))
             ) : filteredAndSortedDags?.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                   No DAGs found
                 </TableCell>
               </TableRow>
             ) : (
               filteredAndSortedDags?.map((dag) => (
-                <TableRow key={dag.dag_id}>
-                  <TableCell className="font-medium">{dag.dag_id}</TableCell>
+                <TableRow key={dag.dag_id} className="cursor-pointer hover:bg-muted/50">
+                  <TableCell className="font-medium">
+                    <Link href={`/dags/${dag.dag_id}`} className="hover:underline">
+                      {dag.dag_id}
+                    </Link>
+                  </TableCell>
                   <TableCell>{dag.owners.join(", ")}</TableCell>
                   <TableCell>
-                    <div className="flex gap-2 flex-wrap">
-                      {dag.tags?.map((tag, index) => (
-                        <Badge 
-                          key={index} 
+                    <div className="flex gap-1 flex-wrap">
+                      {dag.tags?.map((tag) => (
+                        <Badge
+                          key={typeof tag === 'string' ? tag : tag.name}
                           variant="secondary"
                         >
                           {typeof tag === 'string' ? tag : tag.name}
@@ -175,7 +201,12 @@ export function DagList() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={dag.is_active ? "default" : "secondary"}>
+                    <Badge variant="outline">{dag.cluster}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={dag.is_active ? "default" : "secondary"}
+                    >
                       {dag.is_active ? "Active" : "Paused"}
                     </Badge>
                   </TableCell>

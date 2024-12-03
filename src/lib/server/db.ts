@@ -1,6 +1,7 @@
 import { Database } from 'sqlite3'
 import { open } from 'sqlite'
 import { Endpoint } from '@/contexts/endpoints-context'
+import { runMigrations } from './migrations'
 
 let db: any = null
 
@@ -11,19 +12,18 @@ async function getDb() {
       driver: Database
     })
 
-    await db.exec(`
-      CREATE TABLE IF NOT EXISTS endpoints (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        url TEXT NOT NULL,
-        username TEXT NOT NULL,
-        password TEXT NOT NULL,
-        isActive BOOLEAN NOT NULL DEFAULT 1
-      )
-    `)
+    // Run migrations on initial connection
+    await runMigrations()
   }
 
   return db
+}
+
+export async function closeDb() {
+  if (db) {
+    await db.close()
+    db = null
+  }
 }
 
 export async function getEndpoints(): Promise<Endpoint[]> {

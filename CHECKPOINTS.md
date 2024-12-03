@@ -17,7 +17,7 @@
 ### State Management (✅)
 - Implemented React Context for endpoint management
 - Added CRUD operations for endpoints
-- Set up mock data with local endpoints (0.0.0.0:8085, 0.0.0.0:8086)
+- Set up SQLite database for endpoint storage
 - Connected components to shared state
 
 ### UI Components (✅)
@@ -27,54 +27,164 @@
 - Form inputs with labels
 - Action buttons (Edit, Delete)
 
+### Airflow Integration - Phase 1 (✅)
+- Created Airflow client service
+- Implemented health checks for endpoints
+- Added DAG list view with multi-cluster support
+- Added cluster statistics dashboard
+- Implemented DAG runs view
+
+### Data Persistence (✅)
+- Set up SQLite database schema
+- Implemented API endpoints for CRUD operations
+- Added proper error handling
+- Migrated from Vercel KV to SQLite
+
+### Server-Side Development (✅)
+- Authentication & Authorization
+  - User management system
+  - JWT-based authentication
+  - Role-based access control
+  - Rate limiting middleware
+- Data Layer
+  - SQLite schema setup
+  - Migration system
+  - Data validation with Zod
+  - Caching with Redis
+- Batch Operations
+  - Batch DAG state toggling
+  - Batch DAG triggering
+  - Batch DAG run clearing
+  - Admin-only operations
+- Log Management
+  - Task log retrieval
+  - DAG processor logs
+  - Scheduler logs
+  - Real-time log streaming (SSE)
+  - Log caching
+
+### Elasticsearch Integration for Log Search (✅)
+- Added Elasticsearch configuration to environment variables
+- Created ElasticsearchService for managing indices and search operations
+- Implemented automatic log indexing in Elasticsearch
+- Added search API endpoint with filtering and caching
+- Updated LogService to automatically index logs in Elasticsearch
+- Added additional metadata to logs (dagId, taskId, endpointId)
+- Improved timestamp formatting for better search capabilities
+- Added aggregations for log analytics (e.g., error counts by DAG)
+- Implemented log retention policies
+- Added monitoring and alerting based on log patterns
+- Considered adding bulk operations for log indexing
+
+## Current Tasks (🔄)
+
+### Server-Side
+
+#### API Endpoints
+- [x] Endpoint CRUD operations
+- [x] DAG information retrieval
+- [x] Health check system
+- [ ] Batch operation handlers
+- [ ] Advanced search API
+- [ ] Log streaming
+
+#### Data Layer
+- [x] SQLite schema setup
+- [x] Basic CRUD operations
+- [ ] Migration system
+- [ ] Data validation
+- [ ] Caching layer
+
+#### Authentication & Authorization
+- [ ] User management API
+- [ ] Role-based access control
+- [ ] API authentication
+- [ ] Session management
+
+#### Advanced Search System
+- [x] Elasticsearch integration
+- [ ] Full-text search for logs
+- [ ] DAG metadata search
+- [ ] Search result caching
+
+#### Metrics & Monitoring
+- [ ] Prometheus metrics
+- [ ] Performance monitoring
+- [ ] Resource usage tracking
+- [ ] Alert system
+
+#### Event System
+- [ ] Webhook support
+- [ ] Event subscriptions
+- [ ] Notification system
+- [ ] Event history
+
+### Client-Side
+
+#### UI Components
+- [x] Multi-cluster DAG list view
+- [x] Cluster health indicators
+- [x] Aggregated statistics dashboard
+- [ ] Advanced filtering UI
+- [ ] Batch operation controls
+- [ ] Custom dashboard layouts
+
+#### State Management
+- [x] Endpoint context and providers
+- [x] React Query integration
+- [ ] Real-time updates
+- [ ] Offline mode support
+
+#### Error Handling
+- [x] Basic error states
+- [ ] Error boundaries
+- [ ] Retry UI
+- [ ] Error recovery flows
+- [ ] Improved error messages
+
 ## Next Steps
 
-### Admin Portal - Phase 2 (🔄)
-- [ ] Implement edit functionality for existing endpoints
-- [ ] Add confirmation dialog for delete actions
-- [ ] Add form validation messages
-- [ ] Implement error handling
-- [ ] Add loading states
+### Client-Side Development (📝)
 
-### Authentication (📝)
-- [ ] Set up Next-auth
-- [ ] Implement login page
-- [ ] Add user management
-- [ ] Configure authentication providers (LDAP, SAML, OIDC)
+#### Admin Portal
+- [ ] Edit endpoint UI
+- [ ] Delete confirmations
+- [ ] Form validations
+- [ ] Loading states
+- [ ] Success/error toasts
 
-### Airflow Integration (📝)
-- [ ] Create Airflow client service
-- [ ] Implement health checks for endpoints
-- [ ] Add DAG list view
-- [ ] Add task run history
-- [ ] Implement log viewer
+#### UI/UX
+- [ ] Dark mode
+- [ ] Mobile responsiveness
+- [ ] Keyboard shortcuts
+- [ ] Accessibility improvements
+- [ ] Performance optimizations
 
-### Monitoring & Metrics (📝)
-- [ ] Add endpoint health dashboard
-- [ ] Implement metrics collection
-- [ ] Create visualization components
-- [ ] Set up alerting system
+#### Monitoring
+- [ ] Real-time updates UI
+- [ ] Metric visualizations
+- [ ] Alert notifications
+- [ ] Custom dashboards
 
-### Data Persistence (📝)
-- [ ] Set up database schema
-- [ ] Implement API endpoints
-- [ ] Add data migration system
-- [ ] Configure backup system
+### Server-Side Development (📝)
 
-## Future Enhancements
+#### Authentication System
+- [ ] Next-auth setup
+- [ ] Auth provider integration
+- [ ] Permission system
+- [ ] API security
 
-### UI/UX Improvements (🎨)
-- [ ] Add dark mode support
-- [ ] Implement responsive design for mobile
-- [ ] Add keyboard shortcuts
-- [ ] Improve accessibility
+#### Monitoring & Metrics
+- [ ] Metric collection
+- [ ] Data aggregation
+- [ ] Alert system
+- [ ] Log management
 
-### Advanced Features (🚀)
-- [ ] Batch operations for endpoints
-- [ ] Search and filtering
-- [ ] Export/import functionality
-- [ ] Custom dashboard creation
-- [ ] Role-based access control
+#### Infrastructure
+- [ ] Database backups
+- [ ] Rate limiting
+- [ ] Caching strategy
+- [ ] API optimization
 
 ### Documentation (📚)
 - [ ] API documentation

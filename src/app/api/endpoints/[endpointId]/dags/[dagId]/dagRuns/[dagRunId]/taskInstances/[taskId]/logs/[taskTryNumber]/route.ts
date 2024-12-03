@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { AirflowClient } from '@/lib/server/airflow-client'
+import { ServerAirflowClient } from '@/lib/server/server-airflow-client'
 import { getEndpoint } from '@/lib/server/db'
 
 export async function GET(
@@ -16,7 +16,7 @@ export async function GET(
       )
     }
 
-    const client = new AirflowClient(endpoint.url, endpoint.username, endpoint.password)
+    const client = new ServerAirflowClient(endpoint.url, endpoint.username, endpoint.password)
     const logs = await client.getTaskLogs(
       params.dagId,
       params.dagRunId,
