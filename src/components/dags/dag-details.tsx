@@ -154,7 +154,9 @@ export function DagDetails({ dagId }: DagDetailsProps) {
                       : "-"}
                   </TableCell>
                   <TableCell>
-                    {run.duration ? `${run.duration.toFixed(2)}s` : "-"}
+                    {run.start_date && run.end_date
+                      ? `${((new Date(run.end_date).getTime() - new Date(run.start_date).getTime()) / 1000).toFixed(2)}s`
+                      : "-"}
                   </TableCell>
                 </TableRow>
               ))
