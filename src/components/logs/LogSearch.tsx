@@ -15,6 +15,7 @@ import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useDebounce } from '@/hooks/use-debounce'
+import { showToast } from '@/lib/toast'
 
 interface Log {
   _id?: string
@@ -50,9 +51,16 @@ export function LogSearch() {
 
       const response = await fetch(`/api/logs/search?${params}`)
       const data = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch logs')
+      }
+      
       setLogs(data?.hits || [])
+      showToast.success(`Found ${data?.hits?.length || 0} logs`)
     } catch (error) {
       console.error('Error fetching logs:', error)
+      showToast.error('Failed to fetch logs', error as Error)
     } finally {
       setLoading(false)
     }

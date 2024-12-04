@@ -2,7 +2,8 @@
 
 import { useEndpoints } from "@/contexts/endpoints-context"
 import { BrowserAirflowClient } from "@/lib/browser-airflow-client"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient, useQueryCache } from "@tanstack/react-query"
+import { useMemo } from "react"
 import {
   Table,
   TableBody,
@@ -20,22 +21,27 @@ interface DagDetailsProps {
 
 export function DagDetails({ dagId }: DagDetailsProps) {
   const { selectedEndpoint } = useEndpoints()
-  const client = new BrowserAirflowClient(
+  const client = useMemo(() => new BrowserAirflowClient(
     selectedEndpoint?.id ?? "",
     selectedEndpoint?.username ?? "",
     selectedEndpoint?.password ?? ""
-  )
+  ), [selectedEndpoint?.id, selectedEndpoint?.username, selectedEndpoint?.password])
 
   const { data: dag, isLoading: isDagLoading } = useQuery({
     queryKey: ["dag", selectedEndpoint?.id, dagId],
     queryFn: () => client.getDag(dagId),
-    enabled: !!selectedEndpoint && !!dagId,
+    enabled: !!selectedEndpoint?.id && !!dagId,
+    staleTime: 30000,
+    refetchOnWindowFocus: false,
   })
 
   const { data: dagRunsResponse, isLoading: isRunsLoading } = useQuery({
     queryKey: ["dag-runs", selectedEndpoint?.id, dagId],
     queryFn: () => client.getDagRuns(dagId),
-    enabled: !!selectedEndpoint && !!dagId,
+    enabled: !!selectedEndpoint?.id && !!dagId,
+    refetchInterval: 30000,
+    refetchOnWindowFocus: false,
+    staleTime: 20000,
   })
 
   const dagRuns = dagRunsResponse?.dag_runs

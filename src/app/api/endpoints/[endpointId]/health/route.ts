@@ -4,15 +4,16 @@ import { getEndpoint } from '@/lib/server/db'
 
 export async function GET(
   request: Request,
-  { params }: { params: { endpointId: string } }
+  context: { params: { endpointId: string } }
 ) {
-  console.log(`[Health Check] Getting health for endpoint: ${params.endpointId}`)
+  const { endpointId } = context.params
+  console.log(`[Health Check] Getting health for endpoint: ${endpointId}`)
   
   try {
-    const endpoint = await getEndpoint(params.endpointId)
+    const endpoint = await getEndpoint(endpointId)
 
     if (!endpoint) {
-      console.log(`[Health Check] Endpoint not found: ${params.endpointId}`)
+      console.log(`[Health Check] Endpoint not found: ${endpointId}`)
       return NextResponse.json(
         { error: 'Endpoint not found' },
         { status: 404 }

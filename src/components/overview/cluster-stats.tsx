@@ -3,22 +3,33 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { BrowserAirflowClient } from "@/lib/browser-airflow-client"
 import { useEndpoints } from "@/contexts/endpoints-context"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient, useQueryCache } from "@tanstack/react-query"
+import { useMemo } from "react"
 import { Activity, AlertCircle, CheckCircle2, Clock } from "lucide-react"
 
 export function ClusterStats() {
   const { endpoints } = useEndpoints()
+  const queryClient = useQueryClient()
+
+  // Memoize clients for each endpoint
+  const clients = useMemo(() => 
+    endpoints.reduce((acc, endpoint) => ({
+      ...acc,
+      [endpoint.id]: new BrowserAirflowClient(
+        endpoint.id,
+        endpoint.username,
+        endpoint.password
+      )
+    }), {} as Record<string, BrowserAirflowClient>),
+    [endpoints]
+  )
 
   const endpointQueries = useQuery({
-    queryKey: ["all-clusters-stats"],
+    queryKey: ["all-clusters-stats", endpoints.map(e => e.id)],
     queryFn: async () => {
       const allStats = await Promise.all(
         endpoints.map(async (endpoint) => {
-          const client = new BrowserAirflowClient(
-            endpoint.id,
-            endpoint.username,
-            endpoint.password
-          )
+          const client = clients[endpoint.id]
           try {
             const [healthData, dagsData] = await Promise.all([
               client.getHealth(),
@@ -42,6 +53,11 @@ export function ClusterStats() {
       return allStats
     },
     enabled: endpoints.length > 0,
+    refetchInterval: 30000,
+    refetchOnWindowFocus: false,
+    staleTime: 20000,
+    retry: false,
+    gcTime: 0, // Don't keep old data in cache
   })
 
   const stats = {

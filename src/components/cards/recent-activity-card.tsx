@@ -2,7 +2,8 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useEndpoints } from "@/contexts/endpoints-context"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { useMemo } from "react"
 import { BrowserAirflowClient } from "@/lib/browser-airflow-client"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
@@ -11,38 +12,33 @@ import { formatDistanceToNow } from "date-fns"
 
 export function RecentActivityCard() {
   const { selectedEndpoint } = useEndpoints()
-  const client = new BrowserAirflowClient(
+  const client = useMemo(() => new BrowserAirflowClient(
     selectedEndpoint?.id ?? "",
     selectedEndpoint?.username ?? "",
     selectedEndpoint?.password ?? ""
-  )
+  ), [selectedEndpoint?.id, selectedEndpoint?.username, selectedEndpoint?.password])
 
   const { data: recentDags, isLoading } = useQuery({
     queryKey: ["recent-dags", selectedEndpoint?.id],
     queryFn: async () => {
-      const dags = await client.getDags()
-      const recentRuns: Array<{ dagId: string; runId: string; startDate: string; state: string }> = []
-
-      // Get recent runs for each DAG
-      for (const dag of dags.dags.slice(0, 5)) { // Limit to first 5 DAGs for performance
-        const runs = await client.getDagRuns(dag.dag_id, 1, 0) // Get most recent run
-        if (runs.dag_runs.length > 0) {
-          const run = runs.dag_runs[0]
-          recentRuns.push({
-            dagId: dag.dag_id,
-            runId: run.dag_run_id,
-            startDate: run.start_date,
-            state: run.state,
-          })
-        }
-      }
-
-      return recentRuns.sort((a, b) => 
-        new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
-      ).slice(0, 5) // Show only 5 most recent runs
+      // Get all DAG runs in a single call
+      const runs = await client.getDagRuns(undefined, {
+        limit: 5,  // Only get the 5 most recent runs
+        orderBy: "-start_date"  // Order by start date descending
+      })
+      
+      return runs.dag_runs.map(run => ({
+        dagId: run.dag_id,
+        runId: run.dag_run_id,
+        startDate: run.start_date,
+        state: run.state,
+      }))
     },
-    enabled: !!selectedEndpoint,
-    refetchInterval: 30000, // Refresh every 30 seconds
+    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchOnWindowFocus: false,
+    enabled: !!selectedEndpoint?.id,
+    staleTime: 20000, // Consider data fresh for 20 seconds,
+    retry: false, // Don't retry on failure
   })
 
   if (isLoading) {

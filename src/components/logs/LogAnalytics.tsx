@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { BarChart, LineChart, PieChart } from '@/components/ui/charts'
+import { showToast } from '@/lib/toast'
 
 interface LogAnalytics {
   logLevelStats: Array<{ key: string; doc_count: number }>
@@ -37,9 +38,16 @@ export function LogAnalytics() {
         setLoading(true)
         const response = await fetch(`/api/logs/analytics?timeRange=${timeRange}`)
         const data = await response.json()
+        
+        if (!response.ok) {
+          throw new Error(data.message || 'Failed to fetch analytics')
+        }
+        
         setAnalytics(data)
+        showToast.success('Analytics data updated successfully')
       } catch (error) {
         console.error('Error fetching analytics:', error)
+        showToast.error('Failed to fetch analytics', error as Error)
       } finally {
         setLoading(false)
       }

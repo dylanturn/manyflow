@@ -6,11 +6,13 @@ import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useEndpoints } from "@/contexts/endpoints-context"
-import { BrowserAirflowClient } from "@/lib/browser-airflow-client"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { ArrowUpDown, Search } from "lucide-react"
 import { useState } from "react"
 import Link from "next/link"
+import { Switch } from "@/components/ui/switch"
+import { useToast } from "@/components/ui/use-toast"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 type SortField = "dag_id" | "owners" | "is_active" | "cluster"
 
@@ -19,6 +21,8 @@ export function DagList() {
   const [searchQuery, setSearchQuery] = useState("")
   const [sortField, setSortField] = useState<SortField>("dag_id")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
 
   const endpointQueries = useQuery({
     queryKey: ["all-dags"],
@@ -44,7 +48,53 @@ export function DagList() {
       )
       return allDags.flat()
     },
-    enabled: endpoints.length > 0
+    enabled: endpoints.length > 0,
+    refetchInterval: 30000,
+    refetchOnWindowFocus: false,
+    staleTime: 20000,
+  })
+
+  const toggleDagMutation = useMutation({
+    mutationFn: async ({ dagId, clusterId, isActive }: { dagId: string, clusterId: string, isActive: boolean }) => {
+      // Find the endpoint by cluster name to get its ID
+      const endpoint = endpoints.find(e => e.name === clusterId)
+      if (!endpoint) {
+        throw new Error(`Endpoint not found for cluster: ${clusterId}`)
+      }
+
+      const response = await fetch(`/api/endpoints/${endpoint.id}/dags/${dagId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          is_paused: !isActive
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        throw new Error(errorData.error || `Failed to toggle DAG state: ${response.statusText}`)
+      }
+
+      return response.json()
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "DAG state updated successfully",
+      })
+      // Refresh the DAGs list
+      endpointQueries.refetch()
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update DAG state",
+        variant: "destructive",
+      })
+      console.error('Error toggling DAG state:', error)
+    },
   })
 
   const handleSort = (field: SortField) => {
@@ -150,6 +200,7 @@ export function DagList() {
                   <ArrowUpDown className="h-4 w-4" />
                 </Button>
               </TableHead>
+              <TableHead className="text-center">Enable/Disable</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -171,11 +222,14 @@ export function DagList() {
                   <TableCell>
                     <Skeleton className="h-4 w-[80px]" />
                   </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-[40px] mx-auto" />
+                  </TableCell>
                 </TableRow>
               ))
             ) : filteredAndSortedDags?.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                   No DAGs found
                 </TableCell>
               </TableRow>
@@ -209,6 +263,32 @@ export function DagList() {
                     >
                       {dag.is_active ? "Active" : "Paused"}
                     </Badge>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <div className="flex items-center justify-center">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div>
+                            <Switch
+                              checked={dag.is_active}
+                              disabled={toggleDagMutation.isPending}
+                              onCheckedChange={() => {
+                                toggleDagMutation.mutate({
+                                  dagId: dag.dag_id,
+                                  clusterId: dag.cluster,
+                                  isActive: dag.is_active
+                                })
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              aria-label={`Toggle ${dag.dag_id}`}
+                            />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{dag.is_active ? 'Pause DAG' : 'Unpause DAG'}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))

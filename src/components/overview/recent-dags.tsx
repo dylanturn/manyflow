@@ -1,53 +1,50 @@
 'use client'
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useEndpoints } from "@/contexts/endpoints-context"
 import { BrowserAirflowClient } from "@/lib/browser-airflow-client"
 import { useQuery } from "@tanstack/react-query"
-import { CalendarDays } from "lucide-react"
-import Link from "next/link"
-import { Skeleton } from "@/components/ui/skeleton"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import Link from "next/link"
+import { showToast } from "@/lib/toast"
 
 export function RecentDags() {
-  const { endpoints } = useEndpoints()
+  const { selectedEndpoint } = useEndpoints()
+  const client = new BrowserAirflowClient(
+    selectedEndpoint?.id ?? "",
+    selectedEndpoint?.username ?? "",
+    selectedEndpoint?.password ?? ""
+  )
 
-  const { data: allDags, isLoading } = useQuery({
-    queryKey: ["recent-dags-all"],
+  const { data: dagRuns, isLoading } = useQuery({
+    queryKey: ["running-dags", selectedEndpoint?.id],
     queryFn: async () => {
-      const allDagsData = await Promise.all(
-        endpoints.map(async (endpoint) => {
-          const client = new BrowserAirflowClient(
-            endpoint.id,
-            endpoint.username,
-            endpoint.password
-          )
-          try {
-            const dags = await client.getDags()
-            return dags.dags.map(dag => ({
-              ...dag,
-              cluster: endpoint.name
-            }))
-          } catch (error) {
-            console.error(`Failed to fetch DAGs from ${endpoint.name}:`, error)
-            return []
-          }
+      try {
+        const response = await client.getDagRuns(undefined, {
+          state: "running"
         })
-      )
-      return allDagsData.flat()
+        return response.dag_runs
+      } catch (error) {
+        showToast.error("Failed to fetch running DAGs", error as Error)
+        //throw error
+      }
     },
-    enabled: endpoints.length > 0
+    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchOnWindowFocus: false,
+    enabled: !!selectedEndpoint?.id,
+    staleTime: 20000, // Consider data fresh for 20 seconds
   })
 
-  if (endpoints.length === 0) {
+  if (!selectedEndpoint) {
     return (
-      <Card className="col-span-3">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Recent DAGs</CardTitle>
-          <CalendarDays className="h-4 w-4 text-muted-foreground" />
+      <Card>
+        <CardHeader>
+          <CardTitle>Running DAGs</CardTitle>
         </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">Please add an endpoint to view DAGs</p>
+        <CardContent className="h-[400px] flex items-center justify-center">
+          <p className="text-muted-foreground">Please select an endpoint</p>
         </CardContent>
       </Card>
     )
@@ -55,16 +52,15 @@ export function RecentDags() {
 
   if (isLoading) {
     return (
-      <Card className="col-span-3">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Recent DAGs</CardTitle>
-          <CalendarDays className="h-4 w-4 text-muted-foreground" />
+      <Card>
+        <CardHeader>
+          <CardTitle>Running DAGs</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-12 w-full" />
-            ))}
+          <div className="space-y-2">
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
           </div>
         </CardContent>
       </Card>
@@ -72,35 +68,38 @@ export function RecentDags() {
   }
 
   return (
-    <Card className="col-span-3">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">Recent DAGs</CardTitle>
-        <CalendarDays className="h-4 w-4 text-muted-foreground" />
+    <Card>
+      <CardHeader>
+        <CardTitle>Running DAGs</CardTitle>
       </CardHeader>
       <CardContent>
-        {allDags?.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No DAGs found</p>
-        ) : (
-          <div className="space-y-4">
-            {allDags?.slice(0, 5).map((dag) => (
-              <div key={`${dag.cluster}-${dag.dag_id}`} className="flex items-center">
-                <div className="space-y-1">
-                  <p className="text-sm font-medium leading-none">
-                    <Link href="/dags" className="hover:underline">
-                      {dag.dag_id}
-                    </Link>
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm text-muted-foreground">
-                      Owners: {dag.owners.join(", ")}
-                    </p>
-                    <Badge variant="outline">{dag.cluster}</Badge>
+        <ScrollArea className="h-[400px] pr-4">
+          {dagRuns && dagRuns.length > 0 ? (
+            <div className="space-y-2">
+              {dagRuns.map((run) => (
+                <Link
+                  key={run.dag_run_id}
+                  href={`/dags/${run.dag_id}`}
+                  className="block"
+                >
+                  <div className="rounded-lg border p-3 hover:bg-accent transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div className="font-medium">{run.dag_id}</div>
+                      <Badge>Running</Badge>
+                    </div>
+                    <div className="mt-1 text-sm text-muted-foreground">
+                      Started: {new Date(run.start_date).toLocaleString()}
+                    </div>
                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="flex h-full items-center justify-center">
+              <p className="text-muted-foreground">No running DAGs</p>
+            </div>
+          )}
+        </ScrollArea>
       </CardContent>
     </Card>
   )

@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { PlusCircle } from "lucide-react"
 import { useEndpoints } from "@/contexts/endpoints-context"
+import { showToast } from "@/lib/toast"
 
 interface EndpointFormData {
   name: string
@@ -33,25 +34,31 @@ export function AddEndpointDialog() {
     password: "",
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    // Add the new endpoint
-    addEndpoint({
-      name: formData.name,
-      url: formData.url,
-      username: formData.username,
-      password: formData.password,
-    })
-    
-    // Reset form and close dialog
-    setOpen(false)
-    setFormData({
-      name: "",
-      url: "",
-      username: "",
-      password: "",
-    })
+    try {
+      // Add the new endpoint
+      await addEndpoint({
+        name: formData.name,
+        url: formData.url,
+        username: formData.username,
+        password: formData.password,
+      })
+      
+      showToast.success(`Successfully added endpoint: ${formData.name}`)
+      
+      // Reset form and close dialog
+      setOpen(false)
+      setFormData({
+        name: "",
+        url: "",
+        username: "",
+        password: "",
+      })
+    } catch (error) {
+      showToast.error("Failed to add endpoint", error as Error)
+    }
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

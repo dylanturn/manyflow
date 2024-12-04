@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { PlayIcon, PauseIcon, TrashIcon } from '@radix-ui/react-icons'
+import { showToast } from '@/lib/toast'
 
 interface LogStreamProps {
   initialQuery?: string
@@ -44,6 +45,15 @@ export function LogStream({
     dagId,
     taskId,
     endpointId,
+    onConnect: () => {
+      showToast.success('Connected to log stream')
+    },
+    onDisconnect: () => {
+      showToast.error('Disconnected from log stream')
+    },
+    onError: (error) => {
+      showToast.error('Log stream error', error as Error)
+    }
   })
 
   // Auto-scroll to bottom when new logs arrive

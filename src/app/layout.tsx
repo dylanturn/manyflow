@@ -4,6 +4,7 @@ import { Providers } from '@/components/providers'
 import { Sidebar } from '@/components/layout/sidebar'
 import { Flex, Box } from '@radix-ui/themes'
 import '@radix-ui/themes/styles.css'
+import { Toaster } from '@/components/toaster'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -30,6 +31,7 @@ export default function RootLayout({
               </main>
             </Box>
           </Flex>
+          <Toaster />
         </Providers>
       </body>
     </html>

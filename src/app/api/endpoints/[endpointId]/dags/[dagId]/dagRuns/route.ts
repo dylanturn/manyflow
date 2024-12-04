@@ -4,20 +4,26 @@ import { NextResponse } from 'next/server'
 
 export async function GET(
   request: Request,
-  { params }: { params: { endpointId: string; dagId: string } }
+  context: { params: Promise<{ endpointId: string; dagId: string }> }
 ) {
+  const { endpointId, dagId } = await context.params
+
   try {
-    const endpoint = await getEndpoint(params.endpointId)
+    const endpoint = await getEndpoint(endpointId)
     if (!endpoint) {
       return new NextResponse('Endpoint not found', { status: 404 })
     }
 
     const searchParams = new URL(request.url).searchParams
-    const limit = parseInt(searchParams.get('limit') ?? '100')
-    const offset = parseInt(searchParams.get('offset') ?? '0')
+    const options = {
+      limit: parseInt(searchParams.get('limit') ?? '100'),
+      offset: parseInt(searchParams.get('offset') ?? '0'),
+      startDate: searchParams.get('start_date_gte') ?? undefined,
+      endDate: searchParams.get('end_date_lte') ?? undefined,
+    }
 
     const client = new ServerAirflowClient(endpoint.url, endpoint.username, endpoint.password)
-    const response = await client.getDagRuns(params.dagId, limit, offset)
+    const response = await client.getDagRuns(dagId === '~' ? undefined : dagId, options)
 
     return NextResponse.json(response)
   } catch (error: any) {
@@ -28,17 +34,19 @@ export async function GET(
 
 export async function POST(
   request: Request,
-  { params }: { params: { endpointId: string; dagId: string } }
+  context: { params: Promise<{ endpointId: string; dagId: string }> }
 ) {
+  const { endpointId, dagId } = await context.params
+
   try {
-    const endpoint = await getEndpoint(params.endpointId)
+    const endpoint = await getEndpoint(endpointId)
     if (!endpoint) {
       return new NextResponse('Endpoint not found', { status: 404 })
     }
 
     const body = await request.json()
     const client = new ServerAirflowClient(endpoint.url, endpoint.username, endpoint.password)
-    const response = await client.triggerDag(params.dagId, body.conf)
+    const response = await client.triggerDag(dagId, body.conf)
 
     return NextResponse.json(response)
   } catch (error: any) {

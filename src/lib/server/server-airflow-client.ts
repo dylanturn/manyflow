@@ -58,10 +58,28 @@ export class ServerAirflowClient {
     return this.fetch<{ dags: DAG[], total_entries: number }>(`/dags?limit=${limit}&offset=${offset}`)
   }
 
-  async getDagRuns(dagId: string, limit = 100, offset = 0): Promise<{ dag_runs: DAGRun[], total_entries: number }> {
-    return this.fetch<{ dag_runs: DAGRun[], total_entries: number }>(
-      `/dags/${dagId}/dagRuns?limit=${limit}&offset=${offset}`
-    )
+  async getDagRuns(
+    dagId?: string,
+    options: {
+      limit?: number;
+      offset?: number;
+      startDate?: string;
+      endDate?: string;
+    } = {}
+  ): Promise<{ dag_runs: DAGRun[]; total_entries: number }> {
+    const { limit = 100, offset = 0, startDate, endDate } = options;
+    const queryParams = new URLSearchParams({
+      limit: limit.toString(),
+      offset: offset.toString(),
+      ...(startDate && { start_date_gte: startDate }),
+      ...(endDate && { end_date_lte: endDate }),
+    });
+
+    const endpoint = dagId 
+      ? `/dags/${dagId}/dagRuns?${queryParams}`
+      : `/dags/~/dagRuns?${queryParams}`;
+
+    return this.fetch<{ dag_runs: DAGRun[]; total_entries: number }>(endpoint);
   }
 
   async getTaskInstances(
